@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Iron Horus Agency Database</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Press Start 2P', cursive;
+      margin: 0;
+      background: #000;
+      color: white;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      align-items: center;
+      justify-content: center;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 1.5rem;
+      margin-bottom: 2rem;
+      transition: transform 0.5s ease;
+    }
+
+    .menu {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .menu button {
+      padding: 1rem 2rem;
+      border: none;
+      cursor: pointer;
+      font-family: 'Press Start 2P', cursive;
+      font-size: 0.9rem;
+      transition: background 0.3s, transform 0.3s;
+    }
+
+    .menu .check {
+      background: orange;
+      color: black;
+    }
+
+    .menu .timeline {
+      background: blue;
+      color: white;
+    }
+
+    .menu .terminate {
+      background: red;
+      color: white;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .players {
+      display: flex;
+      flex-direction: column;
+      position: absolute;
+      top: 1rem;
+      left: -300px;
+      transition: left 0.5s ease;
+    }
+
+    .players.visible {
+      left: 1rem;
+    }
+
+    .players .player-button {
+      opacity: 0;
+      transform: translateX(-100%);
+      animation: slideInLeft 0.3s forwards;
+    }
+
+    .players.visible .player-button:nth-child(1) { animation-delay: 0.1s; }
+    .players.visible .player-button:nth-child(2) { animation-delay: 0.2s; }
+    .players.visible .player-button:nth-child(3) { animation-delay: 0.3s; }
+    .players.visible .player-button:nth-child(4) { animation-delay: 0.4s; }
+    .players.visible .player-button:nth-child(5) { animation-delay: 0.5s; }
+    .players.visible .player-button:nth-child(6) { animation-delay: 0.6s; }
+    .players.visible .player-button:nth-child(7) { animation-delay: 0.7s; }
+
+    @keyframes slideInLeft {
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .player-button {
+      background: #222;
+      border: 1px solid #444;
+      color: white;
+      padding: 0.5rem;
+      text-align: center;
+      cursor: pointer;
+      margin-bottom: 0.5rem;
+    }
+
+    .stats-container {
+      flex: 1;
+      width: 100%;
+      max-width: 900px;
+      padding: 1rem;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      overflow-y: auto;
+      animation: slideUp 0.5s ease;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      align-items: center;
+    }
+
+    .tabs button, .return-button {
+      background: linear-gradient(90deg, #000, #00f);
+      border: none;
+      color: white;
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+      font-family: 'Press Start 2P', cursive;
+    }
+
+    .return-button {
+      margin-top: auto;
+    }
+
+    .tab-content {
+      display: none;
+      animation: slideUp 0.5s ease;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .card {
+      background: #222;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      border-radius: 8px;
+      width: 100%;
+    }
+
+    #timelineView {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .editable {
+      background: #000;
+      color: white;
+      border: 1px solid #555;
+      padding: 0.2rem;
+      width: 100%;
+      font-family: 'Press Start 2P', cursive;
+    }
+
+    .readonly {
+      background: #111;
+      color: #888;
+      border: 1px solid #333;
+      padding: 0.2rem;
+      width: 100%;
+      font-family: 'Press Start 2P', cursive;
+    }
+
+    @keyframes slideUp {
+      from {
+        transform: translateY(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <h1 id="title">Iron Horus Agency Database</h1>
+  <div class="menu" id="mainMenu">
+    <button class="check" onclick="togglePlayers()">CHECK</button>
+    <button class="timeline" onclick="showTimeline()">TIMELINE</button>
+    <button class="terminate" onclick="initiateTerminate()">TERMINATE</button>
+  </div>
+
+  <div class="players hidden" id="playerList"></div>
+  <div class="stats-container" id="stats">
+    <div class="tabs" id="tabs"></div>
+    <div id="tabContent" class="tab-content"></div>
+    <button class="return-button" onclick="returnToMain()">RETURN</button>
+  </div>
+
+  <div id="timelineView">
+    <h2>Current Timeline: <span id="timelineValue">0</span></h2>
+    <p>Next change in: <span id="countdown"></span></p>
+    <button class="return-button" onclick="returnToMain()">RETURN</button>
+  </div>
+
+  <script>
+    const isAdmin = true;
+    const tabContent = document.getElementById("tabContent");
+
+    function renderTab(tabName) {
+      tabContent.classList.add("active");
+      if (tabName === 'main') {
+        tabContent.innerHTML = `
+          <div class="card">
+            <p>Generic Eliminations: <span contenteditable="${isAdmin}" class="${isAdmin ? 'editable' : 'readonly'}">243</span></p>
+            <p>Archived Eliminations: <span contenteditable="${isAdmin}" class="${isAdmin ? 'editable' : 'readonly'}">87</span></p>
+            <p>Badges Owned: <span contenteditable="${isAdmin}" class="${isAdmin ? 'editable' : 'readonly'}">12</span></p>
+            <p>Characters Owned: <span contenteditable="${isAdmin}" class="${isAdmin ? 'editable' : 'readonly'}">5</span></p>
+            <p>Items Owned: <span contenteditable="${isAdmin}" class="${isAdmin ? 'editable' : 'readonly'}">34</span></p>
+          </div>`;
+      } else if (tabName === 'detailed') {
+        tabContent.innerHTML = `
+          <div class="card">
+            <p>Badges: <span contenteditable="${isAdmin}" class="${isAdmin ? 'editable' : 'readonly'}">[Badge A, Badge B]</span></p>
+            <p>Characters: <span contenteditable="${isAdmin}" class="${isAdmin ? 'editable' : 'readonly'}">[Char X, Char Y]</span></p>
+            <p>Items: <span contenteditable="${isAdmin}" class="${isAdmin ? 'editable' : 'readonly'}">[Sword, Shield]</span></p>
+          </div>`;
+      } else if (tabName === 'boss') {
+        const bosses = [
+          "Collapsed Dust {Scattered Ashes}",
+          "Collapsed Dust {Conclusion.}",
+          "Bill Sans {Base}",
+          "Bill Sans {Enraged}"
+        ];
+        tabContent.innerHTML = bosses.map(boss => `
+          <div class="card">
+            <p>${boss}:
+              ${isAdmin ? `
+                <select class="editable">
+                  <option>Defeated</option>
+                  <option>Not Encountered</option>
+                </select>` : `
+                <span class="readonly">Defeated</span>`}
+            </p>
+          </div>`).join('');
+      }
+    }
+
+    function togglePlayers() {
+      const playerList = document.getElementById("playerList");
+      const isVisible = playerList.classList.toggle("visible");
+      playerList.classList.toggle("hidden", !isVisible);
+      if (isVisible && playerList.children.length === 0) {
+        ['DayS', 'Xeno', 'British Remilia', 'EezyBzy', 'NateTheDarkness', 'Dakura', 'TheComedyOne'].forEach(name => {
+          const btn = document.createElement("button");
+          btn.className = "player-button";
+          btn.innerText = name;
+          btn.onclick = () => showStats(name);
+          playerList.appendChild(btn);
+        });
+      }
+    }
+
+    function showStats(playerName) {
+      document.getElementById("stats").style.display = "flex";
+      document.getElementById("mainMenu").style.display = "none";
+      document.getElementById("tabs").innerHTML = `
+        <button onclick="renderTab('main')">Main</button>
+        <button onclick="renderTab('detailed')">Detailed</button>
+        <button onclick="renderTab('boss')">Boss</button>
+      `;
+      renderTab('main');
+    }
+
+    function returnToMain() {
+      document.getElementById("stats").style.display = "none";
+      document.getElementById("timelineView").style.display = "none";
+      document.getElementById("mainMenu").style.display = "flex";
+      document.getElementById("playerList").classList.remove("visible");
+    }
+
+    function showTimeline() {
+      document.getElementById("mainMenu").style.display = "none";
+      document.getElementById("timelineView").style.display = "flex";
+      startCountdown(30);
+    }
+
+    function startCountdown(seconds) {
+      const countdownEl = document.getElementById("countdown");
+      const interval = setInterval(() => {
+        countdownEl.innerText = seconds;
+        if (seconds-- <= 0) {
+          clearInterval(interval);
+          countdownEl.innerText = "Timeline Shifted!";
+        }
+      }, 1000);
+    }
+
+    function initiateTerminate() {
+      alert("TERMINATION SEQUENCE INITIATED");
+    }
+  </script>
+</body>
+
+</html>
